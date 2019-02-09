@@ -23,7 +23,6 @@ namespace Library.API.Controllers
         [HttpGet()]
         public IActionResult GetAuthors()
         {
-            throw new Exception("ERRORRR");
             var authorsFromRepo = _libraryRepository.GetAuthors();
             var authors = Mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo);
             return Ok(authors);
