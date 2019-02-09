@@ -23,22 +23,26 @@ namespace Library.API.Controllers
         [HttpGet()]
         public IActionResult GetAuthors()
         {
+            throw new Exception("ERRORRR");
             var authorsFromRepo = _libraryRepository.GetAuthors();
             var authors = Mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo);
-            return new JsonResult(authors);
+            return Ok(authors);
         }
+
 
         [HttpGet("{id}")]
         public IActionResult GetAuthor(Guid id)
         {
             var authorFromRepo = _libraryRepository.GetAuthor(id);
-            if(authorFromRepo == null)
+
+            if (authorFromRepo == null)
             {
-                return new JsonResult("404");
+                return NotFound();
             }
+
             var author = Mapper.Map<AuthorDto>(authorFromRepo);
 
-            return new JsonResult(author);
+            return Ok(author);
         }
     }
 }
