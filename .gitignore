@@ -562,4 +562,6 @@ ASALocalRun/
 # BeatPulse healthcheck temp database
 healthchecksdb
 
+NOTES
+
 # End of https://www.gitignore.io/api/git,node,aspnetcore,visualstudio
