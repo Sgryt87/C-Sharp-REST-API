@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Library.API.Services;
 using Library.API.Entities;
 using Microsoft.EntityFrameworkCore;
+using Library.API.Helpers;
 
 namespace Library.API
 {
@@ -40,9 +41,9 @@ namespace Library.API
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, 
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env,
             ILoggerFactory loggerFactory, LibraryContext libraryContext)
-        {           
+        {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -52,9 +53,18 @@ namespace Library.API
                 app.UseExceptionHandler();
             }
 
+            AutoMapper.Mapper.Initialize(cfg =>
+            {
+                // 1. source => 2. destination
+                cfg.CreateMap<Entities.Author, Models.AuthorDto>()
+                //custom member mapping 
+                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"))
+                 .ForMember(dest => dest.Age, opt => opt.MapFrom(src => src.DateOfBirth.GetCurrentAge()));
+            });
+
             libraryContext.EnsureSeedDataForContext();
 
-            app.UseMvc(); 
+            app.UseMvc();
         }
     }
 }
