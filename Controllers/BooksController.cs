@@ -104,6 +104,12 @@ namespace Library.API.Controllers
 
             _libraryRepository.UpdateBookForAuthor(bookForAuthorFromRepo);
 
+            if (!_libraryRepository.Save())
+            {
+                throw new Exception($"Updating book {id} for author {authorId} failed on save.");
+            }
+
+            return NoContent();
         }
 
         [HttpDelete("{id}")]
