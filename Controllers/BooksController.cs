@@ -81,6 +81,31 @@ namespace Library.API.Controllers
             return CreatedAtRoute("GetBookForAuthor", new { authorId = authorId, id = bookToReturn.Id }, bookToReturn);
         }
 
+        [HttpPut("{id}")]
+        public IActionResult UpdateBookForAuthor(Guid authorId, Guid id, [FromBody] BookForUpdateDto book)
+        {
+            if (book == null)
+            {
+                return BadRequest();
+            }
+            if (!_libraryRepository.AuthorExists(authorId))
+            {
+                return NotFound();
+            }
+
+            var bookForAuthorFromRepo = _libraryRepository.GetBookForAuthor(authorId, id);
+            if (bookForAuthorFromRepo == null)
+            {
+                return NotFound();
+            }
+            //1. map //2. apply update //3. map back to entity
+
+            Mapper.Map(book, bookForAuthorFromRepo);
+
+            _libraryRepository.UpdateBookForAuthor(bookForAuthorFromRepo);
+
+        }
+
         [HttpDelete("{id}")]
         public IActionResult DeleteBookForAuthor(Guid authorId, Guid id)
         {
