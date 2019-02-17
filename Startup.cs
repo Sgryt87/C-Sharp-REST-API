@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
@@ -12,15 +7,16 @@ using Library.API.Services;
 using Library.API.Entities;
 using Microsoft.EntityFrameworkCore;
 using Library.API.Helpers;
-using Microsoft.AspNetCore.Mvc.Formatters.Xml;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.Diagnostics;
+using NLog.Extensions.Logging;
 
 namespace Library.API
 {
     public class Startup
     {
-        public static IConfiguration Configuration;
+		public static IConfiguration Configuration;
 
         public Startup(IConfiguration configuration)
         {
@@ -31,7 +27,6 @@ namespace Library.API
         // For more information on how to configure your application, visit http://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            //return in default supported format, or 406 not acceptable or xml
             services.AddMvc(setupAction =>
             {
                 setupAction.ReturnHttpNotAcceptable = true;
@@ -50,13 +45,16 @@ namespace Library.API
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env,
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, 
             ILoggerFactory loggerFactory, LibraryContext libraryContext)
         {
-
             loggerFactory.AddConsole();
 
             loggerFactory.AddDebug(LogLevel.Information);
+
+            //loggerFactory.AddProvider(new NLog.Extensions.Logging.NLogLoggerProvider());
+
+            //loggerFactory.AddNLog();
 
             if (env.IsDevelopment())
             {
@@ -69,7 +67,6 @@ namespace Library.API
                     appBuilder.Run(async context =>
                     {
                         var exceptionHandlerFeature = context.Features.Get<IExceptionHandlerFeature>();
-
                         if (exceptionHandlerFeature != null)
                         {
                             var logger = loggerFactory.CreateLogger("Global exception logger");
@@ -79,18 +76,19 @@ namespace Library.API
                         }
 
                         context.Response.StatusCode = 500;
-                        await context.Response.WriteAsync("An unexpected error happened. Please try again");
-                    });
+                        await context.Response.WriteAsync("An unexpected fault happened. Try again later.");
+
+                    });                      
                 });
             }
 
             AutoMapper.Mapper.Initialize(cfg =>
             {
-                // 1. source => 2. destination
                 cfg.CreateMap<Entities.Author, Models.AuthorDto>()
-                //custom member mapping 
-                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"))
-                 .ForMember(dest => dest.Age, opt => opt.MapFrom(src => src.DateOfBirth.GetCurrentAge()));
+                    .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
+                    $"{src.FirstName} {src.LastName}"))
+                    .ForMember(dest => dest.Age, opt => opt.MapFrom(src =>
+                    src.DateOfBirth.GetCurrentAge()));
 
                 cfg.CreateMap<Entities.Book, Models.BookDto>();
 
@@ -103,9 +101,10 @@ namespace Library.API
                 cfg.CreateMap<Entities.Book, Models.BookForUpdateDto>();
             });
 
+
             libraryContext.EnsureSeedDataForContext();
 
-            app.UseMvc();
+            app.UseMvc(); 
         }
     }
 }

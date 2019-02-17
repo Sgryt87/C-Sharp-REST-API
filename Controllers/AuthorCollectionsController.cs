@@ -54,10 +54,10 @@ namespace Library.API.Controllers
 
         // (key1,key2, ...)
 
-        [HttpGet("({ids})", Name = "GetAuthorCollection")]
+        [HttpGet("({ids})", Name="GetAuthorCollection")]
         public IActionResult GetAuthorCollection(
             [ModelBinder(BinderType = typeof(ArrayModelBinder))] IEnumerable<Guid> ids)
-        {
+        {           
             if (ids == null)
             {
                 return BadRequest();

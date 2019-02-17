@@ -1,14 +1,14 @@
-﻿using AutoMapper;
-using Library.API.Entities;
-using Library.API.Helpers;
-using Library.API.Models;
+﻿using Library.API.Models;
 using Library.API.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Library.API.Helpers;
+using AutoMapper;
+using Library.API.Entities;
+using Microsoft.AspNetCore.Http;
 
 namespace Library.API.Controllers
 {
@@ -24,14 +24,14 @@ namespace Library.API.Controllers
 
         [HttpGet()]
         public IActionResult GetAuthors()
-        {
+        { 
             var authorsFromRepo = _libraryRepository.GetAuthors();
+
             var authors = Mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo);
             return Ok(authors);
         }
 
-
-        [HttpGet("{id}", Name = "GetAuthor")]
+        [HttpGet("{id}", Name ="GetAuthor")]
         public IActionResult GetAuthor(Guid id)
         {
             var authorFromRepo = _libraryRepository.GetAuthor(id);
@@ -42,7 +42,6 @@ namespace Library.API.Controllers
             }
 
             var author = Mapper.Map<AuthorDto>(authorFromRepo);
-
             return Ok(author);
         }
 
@@ -57,14 +56,18 @@ namespace Library.API.Controllers
             var authorEntity = Mapper.Map<Author>(author);
 
             _libraryRepository.AddAuthor(authorEntity);
+
             if (!_libraryRepository.Save())
             {
-                throw new Exception("Creating an author failed");
+                throw new Exception("Creating an author failed on save.");
+               // return StatusCode(500, "A problem happened with handling your request.");
             }
 
             var authorToReturn = Mapper.Map<AuthorDto>(authorEntity);
 
-            return CreatedAtRoute("GetAuthor", new { id = authorToReturn.Id }, authorToReturn);
+            return CreatedAtRoute("GetAuthor",
+                new { id = authorToReturn.Id },
+                authorToReturn);
         }
 
         [HttpPost("{id}")]
@@ -74,6 +77,7 @@ namespace Library.API.Controllers
             {
                 return new StatusCodeResult(StatusCodes.Status409Conflict);
             }
+
             return NotFound();
         }
 
@@ -95,5 +99,6 @@ namespace Library.API.Controllers
 
             return NoContent();
         }
+ 
     }
 }
