@@ -11,12 +11,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.Diagnostics;
 using NLog.Extensions.Logging;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 namespace Library.API
 {
     public class Startup
     {
-		public static IConfiguration Configuration;
+        public static IConfiguration Configuration;
 
         public Startup(IConfiguration configuration)
         {
@@ -42,18 +45,29 @@ namespace Library.API
 
             // register the repository
             services.AddScoped<ILibraryRepository, LibraryRepository>();
+
+            //create 1st time once requested
+            services.AddSingleton<ILibraryRepository, ILibraryRepository>();
+
+            services.AddScoped<IUrlHelper, UrlHelper>(implementationFactory =>
+            {
+                var actionContext = implementationFactory
+                                        .GetService<IActionContextAccessor>()
+                                        .ActionContext;
+                                        return new UrlHelper(actionContext);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, 
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env,
             ILoggerFactory loggerFactory, LibraryContext libraryContext)
         {
             loggerFactory.AddConsole();
 
             loggerFactory.AddDebug(LogLevel.Information);
 
+            //in program.cs
             //loggerFactory.AddProvider(new NLog.Extensions.Logging.NLogLoggerProvider());
-
             //loggerFactory.AddNLog();
 
             if (env.IsDevelopment())
@@ -78,7 +92,7 @@ namespace Library.API
                         context.Response.StatusCode = 500;
                         await context.Response.WriteAsync("An unexpected fault happened. Try again later.");
 
-                    });                      
+                    });
                 });
             }
 
@@ -104,7 +118,7 @@ namespace Library.API
 
             libraryContext.EnsureSeedDataForContext();
 
-            app.UseMvc(); 
+            app.UseMvc();
         }
     }
 }

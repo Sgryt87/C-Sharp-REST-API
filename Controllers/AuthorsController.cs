@@ -16,23 +16,87 @@ namespace Library.API.Controllers
     public class AuthorsController : Controller
     {
         private ILibraryRepository _libraryRepository;
+        private IUrlHelper _urlHelper;
 
-        public AuthorsController(ILibraryRepository libraryRepository)
+        public AuthorsController(ILibraryRepository libraryRepository, IUrlHelper urlHelper)
         {
             _libraryRepository = libraryRepository;
+            _urlHelper = urlHelper;
         }
 
-        [HttpGet()]
-        public IActionResult GetAuthors()
-        { 
-            var authorsFromRepo = _libraryRepository.GetAuthors();
+        const int maxAuthorPageSize = 20;
+
+        [HttpGet(Name = "GetAuthors")]
+        //[FromQuery(Name = "page")]
+        //public IActionResult GetAuthors([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters)
+        {
+            var authorsFromRepo = _libraryRepository.GetAuthors(authorsResourceParameters);
+
+            var previousPageLink = authorsFromRepo.HasPrevious ?
+                CreateAuthorsResourceUri(authorsResourceParameters, ResourceUriType.PreviousPage) : null;
+
+            var nextPageLink = authorsFromRepo.HasNext ?
+                CreateAuthorsResourceUri(authorsResourceParameters, ResourceUriType.NextPage) : null;
+
+            var paginationMetadata = new
+            {
+                totalCount = authorsFromRepo.TotalCount,
+                pageSize = authorsFromRepo.PageSize,
+                currentPage = authorsFromRepo.CurrentPage,
+                totalPages = authorsFromRepo.TotalPages,
+                previousPageLink = previousPageLink,
+                nextPageLink = nextPageLink
+            };
+
+            //metadata pagination
+            Response
+                .Headers
+                .Add("X-Pagination", Newtonsoft.Json.JsonConvert.SerializeObject(paginationMetadata));
 
             var authors = Mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo);
+
             return Ok(authors);
         }
 
-        [HttpGet("{id}", Name ="GetAuthor")]
-        public IActionResult GetAuthor(Guid id)
+        private string CreateAuthorsResourceUri(AuthorsResourceParameters authorsResourceParameters, ResourceUriType type)
+        {
+            switch (type)
+            {
+                case ResourceUriType.PreviousPage:
+                    return _urlHelper.Link("GetAuthors",
+                      new
+                      {
+                          //searchQuery = authorsResourceParameters.SearchQuery,
+                          //genre = authorsResourceParameters.Genre,
+                          pageNumber = authorsResourceParameters.PageNumber - 1,
+                          pageSize = authorsResourceParameters.PageSize
+                      });
+                case ResourceUriType.NextPage:
+                    return _urlHelper.Link("GetAuthors",
+                      new
+                      {
+                          //searchQuery = authorsResourceParameters.SearchQuery,
+                          //genre = authorsResourceParameters.Genre,
+                          pageNumber = authorsResourceParameters.PageNumber + 1,
+                          pageSize = authorsResourceParameters.PageSize
+                      });
+
+                default:
+                    return _urlHelper.Link("GetAuthors",
+                    new
+                    {
+                        //searchQuery = authorsResourceParameters.SearchQuery,
+                        //genre = authorsResourceParameters.Genre,
+                        pageNumber = authorsResourceParameters.PageNumber,
+                        pageSize = authorsResourceParameters.PageSize
+                    });
+            }
+
+        }
+
+        [HttpGet("{id}", Name = "GetAuthor")]
+        public IActionResult GetAuthor([FromRoute] Guid id)
         {
             var authorFromRepo = _libraryRepository.GetAuthor(id);
 
@@ -60,7 +124,7 @@ namespace Library.API.Controllers
             if (!_libraryRepository.Save())
             {
                 throw new Exception("Creating an author failed on save.");
-               // return StatusCode(500, "A problem happened with handling your request.");
+                // return StatusCode(500, "A problem happened with handling your request.");
             }
 
             var authorToReturn = Mapper.Map<AuthorDto>(authorEntity);
@@ -99,6 +163,6 @@ namespace Library.API.Controllers
 
             return NoContent();
         }
- 
+
     }
 }
