@@ -11,7 +11,6 @@ namespace Library.API.Helpers
         public int PageNumber { get; set; } = 1;
 
         private int _pageSize = 10;
-
         public int PageSize
         {
             get
@@ -23,5 +22,10 @@ namespace Library.API.Helpers
                 _pageSize = (value > maxPageSize) ? maxPageSize : value;
             }
         }
+
+        public string Genre { get; set; }
+
+        public string SearchQuery { get; set; }
+        
     }
 }

@@ -14,6 +14,7 @@ using NLog.Extensions.Logging;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Newtonsoft.Json.Serialization;
 
 namespace Library.API
 {
@@ -35,6 +36,11 @@ namespace Library.API
                 setupAction.ReturnHttpNotAcceptable = true;
                 setupAction.OutputFormatters.Add(new XmlDataContractSerializerOutputFormatter());
                 setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter());
+            })
+            .AddJsonOptions(options =>
+            {
+                options.SerializerSettings.ContractResolver =
+                new CamelCasePropertyNamesContractResolver();
             });
 
             // register the DbContext on the container, getting the connection string from
@@ -46,30 +52,22 @@ namespace Library.API
             // register the repository
             services.AddScoped<ILibraryRepository, LibraryRepository>();
 
-            //create 1st time once requested
-            services.AddSingleton<ILibraryRepository, ILibraryRepository>();
+            services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
 
-            services.AddScoped<IUrlHelper, UrlHelper>(implementationFactory =>
+            services.AddScoped<IUrlHelper>(implementationFactory =>
             {
-                var actionContext = implementationFactory
-                                        .GetService<IActionContextAccessor>()
-                                        .ActionContext;
-                                        return new UrlHelper(actionContext);
+                var actionContext = implementationFactory.GetService<IActionContextAccessor>()
+                .ActionContext;
+                return new UrlHelper(actionContext);
             });
+            
+            // services.AddScoped<IUrlHelper, UrlHelper>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env,
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, 
             ILoggerFactory loggerFactory, LibraryContext libraryContext)
-        {
-            loggerFactory.AddConsole();
-
-            loggerFactory.AddDebug(LogLevel.Information);
-
-            //in program.cs
-            //loggerFactory.AddProvider(new NLog.Extensions.Logging.NLogLoggerProvider());
-            //loggerFactory.AddNLog();
-
+        {   
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -92,7 +90,7 @@ namespace Library.API
                         context.Response.StatusCode = 500;
                         await context.Response.WriteAsync("An unexpected fault happened. Try again later.");
 
-                    });
+                    });                      
                 });
             }
 
@@ -118,7 +116,7 @@ namespace Library.API
 
             libraryContext.EnsureSeedDataForContext();
 
-            app.UseMvc();
+            app.UseMvc(); 
         }
     }
 }
