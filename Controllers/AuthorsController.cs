@@ -17,24 +17,32 @@ namespace Library.API.Controllers
     {
         private ILibraryRepository _libraryRepository;
         private IUrlHelper _urlHelper;
+        private IPropertyMappingService _propertyMappingService;
 
         public AuthorsController(ILibraryRepository libraryRepository,
-            IUrlHelper urlHelper)
+            IUrlHelper urlHelper,
+            IPropertyMappingService propertyMappingService)
         {
             _libraryRepository = libraryRepository;
             _urlHelper = urlHelper;
+            _propertyMappingService = propertyMappingService;
         }
 
         [HttpGet(Name = "GetAuthors")]
         public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters)
-        {   
+        {
+            if (!_propertyMappingService.ValidMappingExistsFor<AuthorDto, Author>(authorsResourceParameters.OrderBy))
+            {
+                return BadRequest();
+            }
+
             var authorsFromRepo = _libraryRepository.GetAuthors(authorsResourceParameters);
 
             var previousPageLink = authorsFromRepo.HasPrevious ?
                 CreateAuthorsResourceUri(authorsResourceParameters,
                 ResourceUriType.PreviousPage) : null;
 
-            var nextPageLink = authorsFromRepo.HasNext ? 
+            var nextPageLink = authorsFromRepo.HasNext ?
                 CreateAuthorsResourceUri(authorsResourceParameters,
                 ResourceUriType.NextPage) : null;
 
@@ -95,7 +103,7 @@ namespace Library.API.Controllers
             }
         }
 
-        [HttpGet("{id}", Name ="GetAuthor")]
+        [HttpGet("{id}", Name = "GetAuthor")]
         public IActionResult GetAuthor(Guid id, [FromQuery] string fields)
         {
             var authorFromRepo = _libraryRepository.GetAuthor(id);
@@ -124,7 +132,7 @@ namespace Library.API.Controllers
             if (!_libraryRepository.Save())
             {
                 throw new Exception("Creating an author failed on save.");
-               // return StatusCode(500, "A problem happened with handling your request.");
+                // return StatusCode(500, "A problem happened with handling your request.");
             }
 
             var authorToReturn = Mapper.Map<AuthorDto>(authorEntity);
@@ -163,6 +171,6 @@ namespace Library.API.Controllers
 
             return NoContent();
         }
- 
+
     }
 }
