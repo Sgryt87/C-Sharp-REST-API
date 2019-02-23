@@ -74,10 +74,8 @@ namespace Library.API.Services
             //    .ThenBy(a => a.LastName).AsQueryable();
 
             var collectionBeforePaging =
-                _context.Authors
-                .OrderBy(a => a.FirstName)
-                .ThenBy(a => a.LastName)
-                .AsQueryable();
+                _context.Authors.ApplySort(authorsResourceParameters.OrderBy,
+                _mappingDictionary);
 
             if (!string.IsNullOrEmpty(authorsResourceParameters.Genre))
             {
@@ -102,7 +100,7 @@ namespace Library.API.Services
 
             return PagedList<Author>.Create(collectionBeforePaging,
                 authorsResourceParameters.PageNumber,
-                authorsResourceParameters.PageSize);               
+                authorsResourceParameters.PageSize);
         }
 
         public IEnumerable<Author> GetAuthors(IEnumerable<Guid> authorIds)

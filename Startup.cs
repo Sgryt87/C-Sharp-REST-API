@@ -60,6 +60,8 @@ namespace Library.API
                 .ActionContext;
                 return new UrlHelper(actionContext);
             });
+
+            services.AddTransient<IPropertyMappingService, PropertyMappingService>();
             
             // services.AddScoped<IUrlHelper, UrlHelper>();
         }
