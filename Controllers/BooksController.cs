@@ -17,16 +17,19 @@ namespace Library.API.Controllers
     public class BooksController : Controller
     {
         private ILibraryRepository _libraryRepository;
+        private IUrlHelper _urlHelper;
         private ILogger<BooksController> _logger;
 
         public BooksController(ILibraryRepository libraryRepository,
-            ILogger<BooksController> logger)
+            ILogger<BooksController> logger,
+            IUrlHelper urlHelper)
         {
             _logger = logger;
             _libraryRepository = libraryRepository;
+            _urlHelper = urlHelper;
         }
 
-        [HttpGet()]
+        [HttpGet(Name = "GetBooksForAuthor")]
         public IActionResult GetBooksForAuthor(Guid authorId)
         {
             if (!_libraryRepository.AuthorExists(authorId))
@@ -38,7 +41,15 @@ namespace Library.API.Controllers
 
             var booksForAuthor = Mapper.Map<IEnumerable<BookDto>>(booksForAuthorFromRepo);
 
-            return Ok(booksForAuthor);
+            booksForAuthor = booksForAuthor.Select(book =>
+            {
+                book = CreateLinksForBook(book);
+                return book;
+            });
+
+            var wrapper = new LinkedCollectionResourceWrapperDto<BookDto>(booksForAuthor);
+
+            return Ok(CreateLinksForBooks(wrapper));
         }
 
         [HttpGet("{id}", Name = "GetBookForAuthor")]
@@ -56,11 +67,11 @@ namespace Library.API.Controllers
             }
 
             var bookForAuthor = Mapper.Map<BookDto>(bookForAuthorFromRepo);
-            return Ok(bookForAuthor);
-       }
+            return Ok(CreateLinksForBook(bookForAuthor));
+        }
 
         [HttpPost()]
-        public IActionResult CreateBookForAuthor(Guid authorId, 
+        public IActionResult CreateBookForAuthor(Guid authorId,
             [FromBody] BookForCreationDto book)
         {
             if (book == null)
@@ -98,10 +109,10 @@ namespace Library.API.Controllers
 
             return CreatedAtRoute("GetBookForAuthor",
                 new { authorId = authorId, id = bookToReturn.Id },
-                bookToReturn);
+                CreateLinksForBook(bookToReturn));
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id}", Name = "DeleteBookForAuthor")]
         public IActionResult DeleteBookForAuthor(Guid authorId, Guid id)
         {
             if (!_libraryRepository.AuthorExists(authorId))
@@ -127,7 +138,7 @@ namespace Library.API.Controllers
             return NoContent();
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{id}", Name = "UpdateBookForAuthor")]
         public IActionResult UpdateBookForAuthor(Guid authorId, Guid id,
             [FromBody] BookForUpdateDto book)
         {
@@ -138,7 +149,7 @@ namespace Library.API.Controllers
 
             if (book.Description == book.Title)
             {
-                ModelState.AddModelError(nameof(BookForUpdateDto), 
+                ModelState.AddModelError(nameof(BookForUpdateDto),
                     "The provided description should be different from the title.");
             }
 
@@ -169,7 +180,7 @@ namespace Library.API.Controllers
                 var bookToReturn = Mapper.Map<BookDto>(bookToAdd);
 
                 return CreatedAtRoute("GetBookForAuthor",
-                    new { authorId = authorId, id = bookToReturn.Id},
+                    new { authorId = authorId, id = bookToReturn.Id },
                     bookToReturn);
             }
 
@@ -185,7 +196,7 @@ namespace Library.API.Controllers
             return NoContent();
         }
 
-        [HttpPatch("{id}")]
+        [HttpPatch("{id}", Name = "PartiallyUpdateBookForAuthor")]
         public IActionResult PartiallyUpdateBookForAuthor(Guid authorId, Guid id,
             [FromBody] JsonPatchDocument<BookForUpdateDto> patchDoc)
         {
@@ -208,7 +219,7 @@ namespace Library.API.Controllers
 
                 if (bookDto.Description == bookDto.Title)
                 {
-                    ModelState.AddModelError(nameof(BookForUpdateDto), 
+                    ModelState.AddModelError(nameof(BookForUpdateDto),
                         "The provided description should be different from the title.");
                 }
 
@@ -239,11 +250,11 @@ namespace Library.API.Controllers
 
             patchDoc.ApplyTo(bookToPatch, ModelState);
 
-           // patchDoc.ApplyTo(bookToPatch);
+            // patchDoc.ApplyTo(bookToPatch);
 
             if (bookToPatch.Description == bookToPatch.Title)
             {
-                ModelState.AddModelError(nameof(BookForUpdateDto), 
+                ModelState.AddModelError(nameof(BookForUpdateDto),
                     "The provided description should be different from the title.");
             }
 
@@ -253,7 +264,7 @@ namespace Library.API.Controllers
             {
                 return new UnprocessableEntityObjectResult(ModelState);
             }
-           
+
             Mapper.Map(bookToPatch, bookForAuthorFromRepo);
 
             _libraryRepository.UpdateBookForAuthor(bookForAuthorFromRepo);
@@ -264,6 +275,39 @@ namespace Library.API.Controllers
             }
 
             return NoContent();
+        }
+
+        private BookDto CreateLinksForBook(BookDto book)
+        {
+            book.Links.Add(
+                new LinkDto(_urlHelper.Link("GetBookForAuthor",
+                new { id = book.Id }), "self", "GET"));
+
+            book.Links.Add(
+                new LinkDto(_urlHelper.Link("DeleteBookFOrAuthor",
+                new { id = book.Id }), "delete_book", "DELETE"));
+
+
+            book.Links.Add(
+                new LinkDto(_urlHelper.Link("UpdateBookFOrAuthor",
+                new { id = book.Id }), "update_book", "PUT"));
+
+
+            book.Links.Add(
+                new LinkDto(_urlHelper.Link("PartiallyUpdateBookForAuthor",
+                new { id = book.Id }), "partially_update_book", "PATCH"));
+
+            return book; 
+        }
+
+        private LinkedCollectionResourceWrapperDto<BookDto> CreateLinksForBooks(
+            LinkedCollectionResourceWrapperDto<BookDto> booksWrapper)
+        {
+            booksWrapper.Links.Add(
+                new LinkDto(_urlHelper.Link("GetBooksForAuthor",
+                new {  }), "self", "GET"));
+            
+            return booksWrapper;
         }
 
     }
