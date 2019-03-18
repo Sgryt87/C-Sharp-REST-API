@@ -11,7 +11,7 @@ namespace Library.API.Helpers
     {
         public static ExpandoObject ShapeData<TSource>(this TSource source,
           string fields)
-        {
+        {   
             if (source == null)
             {
                 throw new ArgumentNullException("source");
