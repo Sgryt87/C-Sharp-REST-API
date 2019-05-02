@@ -35,18 +35,20 @@ namespace Library.API.Controllers
         public IActionResult GetAuthors(AuthorsResourceParameters authorsResourceParameters,
             [FromHeader(Name = "Accept")] string mediaType)
         {
-            if (!_propertyMappingService.ValidMappingExistsFor<AuthorDto, Author>(authorsResourceParameters.OrderBy))
+            if (!_propertyMappingService.ValidMappingExistsFor<AuthorDto, Author>
+               (authorsResourceParameters.OrderBy))
             {
                 return BadRequest();
             }
 
-            if (!_typeHelperService.TypeHasProperties<AuthorDto>(authorsResourceParameters.Fields))
+            if (!_typeHelperService.TypeHasProperties<AuthorDto>
+                (authorsResourceParameters.Fields))
             {
                 return BadRequest();
             }
-
+            
             var authorsFromRepo = _libraryRepository.GetAuthors(authorsResourceParameters);
-
+                              
             var authors = Mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo);
 
             if (mediaType == "application/vnd.marvin.hateoas+json")
@@ -56,20 +58,22 @@ namespace Library.API.Controllers
                     totalCount = authorsFromRepo.TotalCount,
                     pageSize = authorsFromRepo.PageSize,
                     currentPage = authorsFromRepo.CurrentPage,
-                    totalPages = authorsFromRepo.TotalPages
+                    totalPages = authorsFromRepo.TotalPages,
                 };
 
                 Response.Headers.Add("X-Pagination",
                     Newtonsoft.Json.JsonConvert.SerializeObject(paginationMetadata));
 
-                var links = CreateLinksForAuthors(authorsResourceParameters, authorsFromRepo.HasNext, authorsFromRepo.HasPrevious);
+                var links = CreateLinksForAuthors(authorsResourceParameters,
+                    authorsFromRepo.HasNext, authorsFromRepo.HasPrevious);
 
                 var shapedAuthors = authors.ShapeData(authorsResourceParameters.Fields);
 
-                var shapeAuthorsWitinLinks = shapedAuthors.Select(author =>
+                var shapedAuthorsWithLinks = shapedAuthors.Select(author =>
                 {
                     var authorAsDictionary = author as IDictionary<string, object>;
-                    var authorLinks = CreateLinksForAuthor((Guid)authorAsDictionary["Id"], authorsResourceParameters.Fields);
+                    var authorLinks = CreateLinksForAuthor(
+                        (Guid)authorAsDictionary["Id"], authorsResourceParameters.Fields);
 
                     authorAsDictionary.Add("links", authorLinks);
 
@@ -78,7 +82,7 @@ namespace Library.API.Controllers
 
                 var linkedCollectionResource = new
                 {
-                    value = shapeAuthorsWitinLinks,
+                    value = shapedAuthorsWithLinks,
                     links = links
                 };
 
@@ -86,11 +90,13 @@ namespace Library.API.Controllers
             }
             else
             {
-                var previousPageLink = authorsFromRepo.HasPrevious ?
-                    CreateAuthorsResourceUri(authorsResourceParameters, ResourceUriType.PreviousPage) : null;
+                var previousPageLink = authorsFromRepo.HasPrevious ? 
+                    CreateAuthorsResourceUri(authorsResourceParameters,
+                    ResourceUriType.PreviousPage) : null;
 
-                var nextPageLink = authorsFromRepo.HasNext ?
-                    CreateAuthorsResourceUri(authorsResourceParameters, ResourceUriType.NextPage) : null;
+                var nextPageLink = authorsFromRepo.HasNext ? 
+                    CreateAuthorsResourceUri(authorsResourceParameters,
+                    ResourceUriType.NextPage) : null;
 
                 var paginationMetadata = new
                 {
@@ -102,7 +108,8 @@ namespace Library.API.Controllers
                     totalPages = authorsFromRepo.TotalPages
                 };
 
-                Response.Headers.Add("X-Pagination", Newtonsoft.Json.JsonConvert.SerializeObject(paginationMetadata));
+                Response.Headers.Add("X-Pagination",
+                    Newtonsoft.Json.JsonConvert.SerializeObject(paginationMetadata));
 
                 return Ok(authors.ShapeData(authorsResourceParameters.Fields));
             }
@@ -136,7 +143,6 @@ namespace Library.API.Controllers
                           pageNumber = authorsResourceParameters.PageNumber + 1,
                           pageSize = authorsResourceParameters.PageSize
                       });
-
                 case ResourceUriType.Current:
                 default:
                     return _urlHelper.Link("GetAuthors",
@@ -152,10 +158,11 @@ namespace Library.API.Controllers
             }
         }
 
-        [HttpGet("{id}", Name = "GetAuthor")]
+        [HttpGet("{id}", Name ="GetAuthor")]
         public IActionResult GetAuthor(Guid id, [FromQuery] string fields)
         {
-            if (!_typeHelperService.TypeHasProperties<AuthorDto>(fields))
+            if (!_typeHelperService.TypeHasProperties<AuthorDto>
+              (fields))
             {
                 return BadRequest();
             }
@@ -171,7 +178,8 @@ namespace Library.API.Controllers
 
             var links = CreateLinksForAuthor(id, fields);
 
-            var linkedResourceToReturn = author.ShapeData(fields) as IDictionary<string, object>;
+            var linkedResourceToReturn = author.ShapeData(fields)
+                as IDictionary<string, object>;
 
             linkedResourceToReturn.Add("links", links);
 
@@ -179,7 +187,47 @@ namespace Library.API.Controllers
         }
 
         [HttpPost(Name = "CreateAuthor")]
+        [RequestHeaderMatchesMediaType("Content-Type", 
+            new [] { "application/vnd.marvin.author.full+json" })]
         public IActionResult CreateAuthor([FromBody] AuthorForCreationDto author)
+        {
+            if (author == null)
+            {
+                return BadRequest();
+            }
+
+            var authorEntity = Mapper.Map<Author>(author);
+
+            _libraryRepository.AddAuthor(authorEntity);
+
+            if (!_libraryRepository.Save())
+            {
+                throw new Exception("Creating an author failed on save.");
+               // return StatusCode(500, "A problem happened with handling your request.");
+            }
+
+            var authorToReturn = Mapper.Map<AuthorDto>(authorEntity);
+
+            var links = CreateLinksForAuthor(authorToReturn.Id, null);
+
+            var linkedResourceToReturn = authorToReturn.ShapeData(null)
+                as IDictionary<string, object>;
+
+            linkedResourceToReturn.Add("links", links);
+
+            return CreatedAtRoute("GetAuthor",
+                new { id = linkedResourceToReturn["Id"] },
+                linkedResourceToReturn);
+        }
+
+
+        [HttpPost(Name = "CreateAuthorWithDateOfDeath")]
+        [RequestHeaderMatchesMediaType("Content-Type",
+            new[] { "application/vnd.marvin.authorwithdateofdeath.full+json",
+                    "application/vnd.marvin.authorwithdateofdeath.full+xml" })]
+        // [RequestHeaderMatchesMediaType("Accept", new[] { "..." })]
+        public IActionResult CreateAuthorWithDateOfDeath(
+            [FromBody] AuthorForCreationWithDateOfDeathDto author)
         {
             if (author == null)
             {
@@ -200,7 +248,8 @@ namespace Library.API.Controllers
 
             var links = CreateLinksForAuthor(authorToReturn.Id, null);
 
-            var linkedResourceToReturn = authorToReturn.ShapeData(null) as IDictionary<string, object>;
+            var linkedResourceToReturn = authorToReturn.ShapeData(null)
+                as IDictionary<string, object>;
 
             linkedResourceToReturn.Add("links", links);
 
@@ -238,7 +287,7 @@ namespace Library.API.Controllers
 
             return NoContent();
         }
-
+  
         private IEnumerable<LinkDto> CreateLinksForAuthor(Guid id, string fields)
         {
             var links = new List<LinkDto>();
@@ -246,50 +295,52 @@ namespace Library.API.Controllers
             if (string.IsNullOrWhiteSpace(fields))
             {
                 links.Add(
-                    new LinkDto(
-                        _urlHelper.Link("GetAuthor",
-                        new { id = id }), "self", "GET"));
+                  new LinkDto(_urlHelper.Link("GetAuthor", new { id = id }),
+                  "self",
+                  "GET"));
             }
             else
             {
                 links.Add(
-                    new LinkDto(
-                        _urlHelper.Link("GetAuthor",
-                        new { id = id, fields = fields }), "self", "GET"));
+                  new LinkDto(_urlHelper.Link("GetAuthor", new { id = id, fields = fields }),
+                  "self",
+                  "GET"));
             }
 
             links.Add(
-                    new LinkDto(
-                        _urlHelper.Link("DeleteAuthor",
-                        new { id = id, fields = fields }), "delete_author", "DELETE"));
+              new LinkDto(_urlHelper.Link("DeleteAuthor", new { id = id }),
+              "delete_author",
+              "DELETE"));
 
             links.Add(
-                    new LinkDto(
-                        _urlHelper.Link("CreateBookForAuthor",
-                        new { authorId = id }), "create_book_for_author", "POST"));
+              new LinkDto(_urlHelper.Link("CreateBookForAuthor", new { authorId = id }),
+              "create_book_for_author",
+              "POST"));
 
             links.Add(
-                    new LinkDto(
-                        _urlHelper.Link("GetBooksForAuthor",
-                        new { authorId = id }), "books", "GET"));
+               new LinkDto(_urlHelper.Link("GetBooksForAuthor", new { authorId = id }),
+               "books",
+               "GET"));
 
             return links;
         }
 
         private IEnumerable<LinkDto> CreateLinksForAuthors(
-            AuthorsResourceParameters authorsResourceParameters, bool hasNext, bool hasPrevious)
+            AuthorsResourceParameters authorsResourceParameters,
+            bool hasNext, bool hasPrevious)
         {
             var links = new List<LinkDto>();
 
+            // self 
             links.Add(
-               new LinkDto(CreateAuthorsResourceUri(authorsResourceParameters,
+               new LinkDto(CreateAuthorsResourceUri(authorsResourceParameters, 
                ResourceUriType.Current)
                , "self", "GET"));
 
             if (hasNext)
             {
                 links.Add(
-                  new LinkDto(CreateAuthorsResourceUri(authorsResourceParameters,
+                  new LinkDto(CreateAuthorsResourceUri(authorsResourceParameters, 
                   ResourceUriType.NextPage),
                   "nextPage", "GET"));
             }
@@ -297,13 +348,12 @@ namespace Library.API.Controllers
             if (hasPrevious)
             {
                 links.Add(
-                    new LinkDto(CreateAuthorsResourceUri(authorsResourceParameters,
+                    new LinkDto(CreateAuthorsResourceUri(authorsResourceParameters, 
                     ResourceUriType.PreviousPage),
                     "previousPage", "GET"));
             }
 
             return links;
         }
-
     }
 }

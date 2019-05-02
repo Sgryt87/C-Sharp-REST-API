@@ -12,7 +12,7 @@ namespace Library.API.Services
         private LibraryContext _context;
         private IPropertyMappingService _propertyMappingService;
 
-        public LibraryRepository(LibraryContext context,
+        public LibraryRepository(LibraryContext context, 
             IPropertyMappingService propertyMappingService)
         {
             _context = context;
@@ -77,9 +77,7 @@ namespace Library.API.Services
             //    .ThenBy(a => a.LastName).AsQueryable();
 
             var collectionBeforePaging =
-                _context
-                .Authors
-                .ApplySort(authorsResourceParameters.OrderBy,
+                _context.Authors.ApplySort(authorsResourceParameters.OrderBy,
                 _propertyMappingService.GetPropertyMapping<AuthorDto, Author>());
 
             if (!string.IsNullOrEmpty(authorsResourceParameters.Genre))
@@ -105,7 +103,7 @@ namespace Library.API.Services
 
             return PagedList<Author>.Create(collectionBeforePaging,
                 authorsResourceParameters.PageNumber,
-                authorsResourceParameters.PageSize);
+                authorsResourceParameters.PageSize);               
         }
 
         public IEnumerable<Author> GetAuthors(IEnumerable<Guid> authorIds)

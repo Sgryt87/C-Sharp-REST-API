@@ -7,10 +7,12 @@ using System.Threading.Tasks;
 
 namespace Library.API.Controllers
 {
+
     [Route("api")]
     public class RootController : Controller
     {
         private IUrlHelper _urlHelper;
+
         public RootController(IUrlHelper urlHelper)
         {
             _urlHelper = urlHelper;
@@ -24,29 +26,24 @@ namespace Library.API.Controllers
                 var links = new List<LinkDto>();
 
                 links.Add(
-                    new LinkDto(_urlHelper.Link("GetRoot", new { }),
-                    "self",
-                    "GET"
-                    ));
+                  new LinkDto(_urlHelper.Link("GetRoot", new { }),
+                  "self",
+                  "GET"));
 
                 links.Add(
-                    new LinkDto(_urlHelper.Link("GetAuthors", new { }),
-                    "authors",
-                    "GET"
-                ));
+                 new LinkDto(_urlHelper.Link("GetAuthors", new { }),
+                 "authors",
+                 "GET"));
 
                 links.Add(
-                    new LinkDto(_urlHelper.Link("CreateAuthor", new { }),
-                    "create_author",
-                    "POST"
-                ));
+                  new LinkDto(_urlHelper.Link("CreateAuthor", new { }),
+                  "create_author",
+                  "POST"));
 
                 return Ok(links);
             }
-            else
-            {
-                return NoContent();
-            }
+
+            return NoContent();
         }
     }
 }
