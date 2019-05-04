@@ -38,12 +38,12 @@ namespace Library.API
                 setupAction.OutputFormatters.Add(new XmlDataContractSerializerOutputFormatter());
                 // setupAction.InputFormatters.Add(new XmlDataContractSerializerInputFormatter());
 
-                var xmlDataContractSerializerInputFormatter = 
+                var xmlDataContractSerializerInputFormatter =
                 new XmlDataContractSerializerInputFormatter();
                 xmlDataContractSerializerInputFormatter.SupportedMediaTypes
                     .Add("application/vnd.marvin.authorwithdateofdeath.full+xml");
                 setupAction.InputFormatters.Add(xmlDataContractSerializerInputFormatter);
-                
+
                 var jsonInputFormatter = setupAction.InputFormatters
                 .OfType<JsonInputFormatter>().FirstOrDefault();
 
@@ -54,7 +54,7 @@ namespace Library.API
                     jsonInputFormatter.SupportedMediaTypes
                     .Add("application/vnd.marvin.authorwithdateofdeath.full+json");
                 }
-                
+
                 var jsonOutputFormatter = setupAction.OutputFormatters
                     .OfType<JsonOutputFormatter>().FirstOrDefault();
 
@@ -92,11 +92,20 @@ namespace Library.API
 
             services.AddTransient<ITypeHelperService, TypeHelperService>();
 
+            services.AddHttpCacheHeaders((expiratioModelOptions) =>
+            {
+                expiratioModelOptions.MaxAge = 600;
+            },
+            (validationOptions) =>
+            {
+                validationOptions.AddMustRevalidate = true;
+            }); // config how headers generated
+
             // services.AddScoped<IUrlHelper, UrlHelper>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, 
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env,
             ILoggerFactory loggerFactory, LibraryContext libraryContext)
         {
             if (env.IsDevelopment())
@@ -121,7 +130,7 @@ namespace Library.API
                         context.Response.StatusCode = 500;
                         await context.Response.WriteAsync("An unexpected fault happened. Try again later.");
 
-                    });                      
+                    });
                 });
             }
 
@@ -146,10 +155,11 @@ namespace Library.API
                 cfg.CreateMap<Entities.Book, Models.BookForUpdateDto>();
             });
 
-
             libraryContext.EnsureSeedDataForContext();
 
-            app.UseMvc(); 
+            app.UseHttpCacheHeaders();
+
+            app.UseMvc();
         }
     }
 }
