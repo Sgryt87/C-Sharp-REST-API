@@ -101,6 +101,8 @@ namespace Library.API
                 validationOptions.AddMustRevalidate = true;
             }); // config how headers generated
 
+            services.AddResponseCaching();
+
             // services.AddScoped<IUrlHelper, UrlHelper>();
         }
 
@@ -156,6 +158,8 @@ namespace Library.API
             });
 
             libraryContext.EnsureSeedDataForContext();
+
+            app.UseResponseCaching();
 
             app.UseHttpCacheHeaders();
 
