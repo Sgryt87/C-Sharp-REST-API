@@ -1,0 +1,220 @@
+{
+	"info": {
+		"_postman_id": "7284c620-7588-4698-ba40-db38b7e4f85a",
+		"name": "Lib2",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "GET Authors",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "1d333a90-707a-4463-8461-07cf89afc617",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"X-Pagination is present\", function () {",
+							"    pm.response.to.have.header(\"X-Pagination\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:6058/api/authors",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "6058",
+					"path": [
+						"api",
+						"authors"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET Author",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "dac90c64-1655-4bf7-ae0c-7dbe07dab622",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Id matches\", function () {",
+							"    ",
+							"    pm.expect(pm.response.text()).to.include(\"76053df4-6687-4353-8937-b45556748abe\");",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:6058/api/authors/76053df4-6687-4353-8937-b45556748abe",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "6058",
+					"path": [
+						"api",
+						"authors",
+						"76053df4-6687-4353-8937-b45556748abe"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET Author (with tests)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"Status code is 200\"] = responseCode.code === 200;",
+							" ",
+							"var jsonData = JSON.parse(responseBody);",
+							"var idMatches = jsonData.id === \"76053df4-6687-4353-8937-b45556748abe\";",
+							"",
+							"tests[\"Id matches returned id\"] = idMatches; "
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:6058/api/authors/76053df4-6687-4353-8937-b45556748abe",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "6058",
+					"path": [
+						"api",
+						"authors",
+						"76053df4-6687-4353-8937-b45556748abe"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET Authors (with tests)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"tests[\"X-Pagination is present\"] = postman.getResponseHeader(\"X-Pagination\");"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:6058/api/authors",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "6058",
+					"path": [
+						"api",
+						"authors"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "OPTIONS Authors",
+			"request": {
+				"method": "OPTIONS",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"url": {
+					"raw": "http://localhost:6058/api/authors",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "6058",
+					"path": [
+						"api",
+						"authors"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "HEAD Authors",
+			"request": {
+				"method": "HEAD",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:6058/api/authors",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "6058",
+					"path": [
+						"api",
+						"authors"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
